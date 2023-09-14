@@ -1,0 +1,109 @@
+#include "Timer.h"
+
+enum BL_States { BL_SMStart, BL_LedOff, BL_LedOn } BL_State;
+int LightOrDark = analogRead(A0);
+int count = 0;
+int stay;
+//int update;
+
+void TickFct_Blink() {
+
+   switch ( BL_State ) { //Transitions
+      case BL_SMStart:
+         BL_State = BL_LedOff; //Initial state
+         break;
+      case BL_LedOff:
+      if (stay == 0){
+         if(digitalRead(5) == 1 || analogRead(A0) <= 420){
+        BL_State = BL_LedOn;
+      }
+
+      else if (digitalRead(5) == 0 && analogRead(A0) > 500){
+      count = 40;
+        BL_State = BL_LedOff;
+        
+      }
+        
+      }
+      else if (stay > 0){
+        stay = stay - 1;
+        BL_State = BL_LedOff;
+      }
+      
+
+      break;
+      case BL_LedOn:
+      if(digitalRead(5) == 0){
+        /*
+        if(analogRead(A0) < 178){
+         // count = count - update;
+          count = count + 40;
+          BL_State = BL_LedOn;
+        }
+        */
+         if (count > 0){
+           count = count - 1;
+           //update = update + 1;
+           if(analogRead(A0) <= 420){
+              count = 0;
+              count = 41;
+           }
+           
+           Serial.print(count);
+           Serial.print(" ");
+           BL_State = BL_LedOn;
+         }
+         else if (count == 0){
+           BL_State = BL_LedOff;
+         }
+      }
+        
+         else if (digitalRead(5) == 1){
+           stay =  20;
+           BL_State = BL_LedOff;
+         }
+        
+    
+         break;
+      default:
+         BL_State = BL_SMStart;
+         break;
+   }
+
+   switch (BL_State ) { //State actions
+      case BL_LedOff:
+         digitalWrite(4, HIGH);
+         digitalWrite(3, LOW);
+         break;
+      case BL_LedOn:
+        digitalWrite(3, HIGH);
+        digitalWrite(4, LOW);
+      
+         //digitalWrite(4, HIGH);
+         break;
+      default:
+         break;
+   }
+}
+
+
+void setup(  ) {
+  pinMode(3, OUTPUT);
+  pinMode(4, OUTPUT);
+  //digitalWrite(4, LOW);
+  TimerSet(500);
+  TimerOn();
+  Serial.begin(9600);
+}
+
+void loop() {
+  //Serial.println(analogRead(A0));
+  int LightOrDark = analogRead(A0);
+
+  Serial.println(LightOrDark);
+
+  // to run repeatedly:
+  TickFct_Blink();
+  while (!TimerFlag){}  // Wait for BL's period
+  TimerFlag = 0;  
+}
